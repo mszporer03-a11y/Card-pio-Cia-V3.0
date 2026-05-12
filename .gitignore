@@ -1,0 +1,28 @@
+# Dependências
+node_modules/
+
+# Build outputs
+build/
+dist/
+release/
+
+# Dados de runtime (banco e imagens — não são código)
+data/
+
+# Temporários / testes
+output/
+.test-images/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Variáveis de ambiente
+.env
+
+# Pasta duplicada interna
+Card�pio Cia V3.0/

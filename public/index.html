@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cardápio Cia v3.0</title>
+  <style>
+    :root {
+      --bg: #f4f5f8;
+      --surface: #ffffff;
+      --surface2: #eef0f6;
+      --border: #d4d8e8;
+      --text: #1a1d2e;
+      --text2: #5c6378;
+      --accent: #C02927;
+      --accent2: #8B0000;
+      --green: #15803d;
+      --red: #dc2626;
+      --yellow: #b45309;
+      --teal: #8a6520;
+      --orange: #c2410c;
+      --radius: 10px;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    /* Top nav */
+    .topbar { display:flex; align-items:center; background:var(--surface); border-bottom:1px solid var(--border); padding:0 24px; height:56px; gap:32px; position:sticky; top:0; z-index:100; }
+    .topbar .actions { margin-left:auto; display:flex; gap:8px; align-items:center; }
+    .topbar .count-pill { background:var(--surface2); color:var(--text); border:1px solid var(--border); padding:4px 10px; border-radius:999px; font-size:12px; font-weight:600; }
+    .topbar .logo { font-size:18px; font-weight:700; color:var(--accent); letter-spacing:-0.5px; }
+    .topbar .logo span { color:var(--text2); font-weight:400; font-size:14px; margin-left:6px; }
+    .tabs { display:flex; gap:4px; }
+    .tabs button { background:none; border:none; color:var(--text2); padding:8px 16px; font-size:14px; cursor:pointer; border-radius:var(--radius); transition:all .2s; font-weight:500; }
+    .tabs button:hover { background:var(--surface2); color:var(--text); }
+    .tabs button.active { background:var(--accent); color:#fff; }
+
+    /* Main container */
+    .container { max-width:1400px; margin:0 auto; padding:24px; }
+    .page { display:none; }
+    .page.active { display:block; }
+
+    /* Cards */
+    .card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:24px; margin-bottom:16px; }
+    .card h2 { font-size:18px; font-weight:600; margin-bottom:16px; display:flex; align-items:center; gap:8px; }
+    .card h2 .badge { background:var(--accent); color:#fff; font-size:11px; padding:2px 8px; border-radius:12px; font-weight:600; }
+
+    /* Buttons */
+    .btn { display:inline-flex; align-items:center; gap:6px; padding:8px 18px; border:none; border-radius:var(--radius); font-size:14px; font-weight:600; cursor:pointer; transition:all .15s; }
+    .btn-primary { background:var(--accent); color:#fff; }
+    .btn-primary:hover { background:var(--accent2); transform:translateY(-1px); }
+    .btn-danger { background:#dc2626; color:#fff; }
+    .btn-danger:hover { background:#b91c1c; }
+    .btn-ghost { background:transparent; color:var(--text2); border:1px solid var(--border); }
+    .btn-ghost:hover { background:var(--surface2); color:var(--text); }
+    .btn-success { background:#16a34a; color:#fff; }
+    .btn-success:hover { background:#15803d; }
+    .btn:disabled { opacity:0.5; cursor:not-allowed; transform:none; }
+    .btn-sm { padding:5px 12px; font-size:12px; }
+
+    /* Form elements */
+    input[type="text"], input[type="number"], input[type="file"], select, textarea {
+      background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius); color:var(--text);
+      padding:8px 12px; font-size:14px; width:100%; outline:none; transition:border-color .2s;
+    }
+    input:focus, select:focus, textarea:focus { border-color:var(--accent); }
+    textarea { resize:vertical; min-height:80px; font-family:inherit; }
+    label { display:block; font-size:13px; color:var(--text2); margin-bottom:4px; font-weight:500; }
+    .form-group { margin-bottom:14px; }
+
+    /* Table */
+    table { width:100%; border-collapse:collapse; }
+    th, td { text-align:left; padding:10px 12px; border-bottom:1px solid var(--border); font-size:13px; }
+    th { color:var(--text2); font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:0.5px; }
+    tr:hover td { background:var(--surface2); }
+
+    /* Grid */
+    .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    .grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; }
+    @media(max-width:900px) { .grid-2, .grid-3 { grid-template-columns:1fr; } }
+
+    /* Badges & Pills */
+    .pill { display:inline-block; padding:3px 10px; border-radius:12px; font-size:11px; font-weight:600; }
+    .pill-green { background:#dcfce7; color:var(--green); }
+    .pill-yellow { background:#fef3c7; color:var(--yellow); }
+    .pill-blue { background:#fee2e2; color:var(--accent); }
+    .pill-red { background:#fee2e2; color:var(--red); }
+
+    /* Progress bar */
+    .progress-bar { height:4px; background:var(--surface2); border-radius:2px; overflow:hidden; margin-top:8px; }
+    .progress-bar .fill { height:100%; background:var(--accent); transition:width .3s; border-radius:2px; }
+
+    /* Toast */
+    .toast-container { position:fixed; top:70px; right:24px; z-index:1000; display:flex; flex-direction:column; gap:8px; }
+    .toast { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:12px 20px; font-size:14px; animation:slideIn .3s; box-shadow:0 4px 16px rgba(0,0,0,.1); display:flex; align-items:center; gap:8px; }
+    .toast.success { border-left:3px solid var(--green); }
+    .toast.error { border-left:3px solid var(--red); }
+    .toast.info { border-left:3px solid var(--accent); }
+    @keyframes slideIn { from { opacity:0; transform:translateX(30px); } to { opacity:1; transform:translateX(0); } }
+
+    /* Recipe card grid */
+    .recipe-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:16px; }
+    .recipe-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; cursor:pointer; transition:all .2s; }
+    .recipe-card:hover { border-color:var(--accent); transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,.1); }
+    .recipe-card .card-img { width:100%; height:180px; object-fit:cover; background:var(--surface2); }
+    .recipe-card .card-img-placeholder { width:100%; height:180px; background:var(--surface2); display:flex; align-items:center; justify-content:center; color:var(--text2); font-size:13px; }
+    .recipe-card .card-body { padding:14px; }
+    .recipe-card .card-body h3 { font-size:15px; font-weight:600; margin-bottom:6px; }
+    .recipe-card .card-body .cat { font-size:12px; color:var(--teal); font-weight:500; }
+    .recipe-card .card-body .meta { font-size:12px; color:var(--text2); margin-top:6px; }
+
+    /* Modal */
+    .modal-overlay { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,.6); z-index:200; align-items:center; justify-content:center; }
+    .modal-overlay.active { display:flex; }
+    .modal { background:var(--surface); border:1px solid var(--border); border-radius:12px; width:90%; max-width:700px; max-height:85vh; overflow-y:auto; padding:28px; }
+    .modal h2 { font-size:20px; margin-bottom:20px; }
+    .modal-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:20px; }
+
+    /* Category selector */
+    .category-row { display:flex; align-items:center; gap:12px; padding:10px 14px; border:1px solid var(--border); border-radius:var(--radius); margin-bottom:8px; background:var(--surface2); }
+    .category-row .cat-name { flex:1; font-weight:500; font-size:14px; }
+    .category-row .cat-count { color:var(--text2); font-size:12px; }
+    .category-row input[type="number"] { width:70px; text-align:center; }
+
+    /* Checkbox */
+    .checkbox { display:flex; align-items:center; gap:8px; cursor:pointer; font-size:14px; }
+    .checkbox input[type="checkbox"] { width:18px; height:18px; accent-color:var(--accent); }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width:8px; }
+    ::-webkit-scrollbar-track { background:var(--bg); }
+    ::-webkit-scrollbar-thumb { background:var(--border); border-radius:4px; }
+    ::-webkit-scrollbar-thumb:hover { background:var(--text2); }
+
+    /* File drop zone */
+    .drop-zone { border:2px dashed var(--border); border-radius:var(--radius); padding:40px; text-align:center; cursor:pointer; transition:all .2s; }
+    .drop-zone:hover, .drop-zone.dragover { border-color:var(--accent); background:var(--surface2); }
+    .drop-zone p { color:var(--text2); margin-bottom:8px; }
+    .drop-zone .icon { font-size:36px; margin-bottom:12px; }
+
+    /* Log area */
+    .log-area { background:#1e2030; border:1px solid var(--border); border-radius:var(--radius); padding:16px; font-family:'Cascadia Code', 'Fira Code', monospace; font-size:12px; max-height:300px; overflow-y:auto; white-space:pre-wrap; color:#4ade80; }
+
+    /* Mandatory recipes list */
+    .mandatory-item { display:flex; align-items:center; gap:8px; padding:8px 12px; background:var(--surface2); border-radius:var(--radius); margin-bottom:6px; }
+    .mandatory-item .name { flex:1; font-size:13px; }
+    .mandatory-item .remove { cursor:pointer; color:var(--red); font-size:16px; border:none; background:none; }
+
+    /* Search */
+    .search-box { position:relative; }
+    .search-box input { padding-left:36px; }
+    .search-box .search-icon { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--text2); }
+
+    /* Flex utils */
+    .flex { display:flex; } .flex-col { flex-direction:column; } .items-center { align-items:center; }
+    .justify-between { justify-content:space-between; } .gap-8 { gap:8px; } .gap-16 { gap:16px; }
+    .mb-8 { margin-bottom:8px; } .mb-16 { margin-bottom:16px; } .mt-16 { margin-top:16px; }
+
+    /* Empty state */
+    .empty-state { text-align:center; padding:60px 20px; color:var(--text2); }
+    .empty-state .icon { font-size:48px; margin-bottom:16px; }
+    .empty-state p { font-size:15px; }
+
+    /* ── Plan Preview Table ────────────────────────────────────────────────────────────── */
+    .plan-tbl { width:100%; border-collapse:collapse; font-size:12px; }
+    .plan-tbl thead th { background:var(--accent); color:#fff; padding:9px 10px; text-align:center; white-space:nowrap; font-weight:700; font-size:11px; letter-spacing:.6px; text-transform:uppercase; }
+    .plan-tbl thead th:nth-child(2) { text-align:left; }
+    .plan-tbl tbody tr:nth-child(even) > td { background:#00000006; }
+    .plan-tbl tbody tr:hover > td { background:#C0292710; }
+    .plan-tbl td { border-bottom:1px solid var(--border); padding:3px 4px; vertical-align:middle; }
+    .td-seq { width:40px !important; text-align:center; color:var(--text2); font-size:12px; font-weight:600; padding:4px 8px !important; }
+    .td-cat { min-width:120px; max-width:150px; color:var(--teal); font-weight:600; font-size:11px; padding:6px 10px !important; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .plan-cell { display:block; min-width:100px; background:var(--surface2); border:1px solid transparent; border-radius:6px; padding:6px 8px; cursor:pointer; text-align:left; font-size:11px; line-height:1.4; color:var(--text); transition:all .15s; word-break:break-word; position:relative; width:100%; }
+    .plan-cell:hover { border-color:var(--accent); background:#C0292712; color:var(--accent); }
+    .plan-cell.is-empty { color:var(--text2); text-align:center; font-style:italic; border:1px dashed var(--border); background:transparent; }
+    .plan-cell .swap-hint { display:none; float:right; font-size:9px; color:var(--accent); margin-left:4px; }
+    .plan-cell:hover .swap-hint { display:inline; }
+    /* ── Swap Recipe Modal ────────────────────────────────────────────────────────────── */
+    #swapModal .modal { max-width:880px; }
+    .swap-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(155px,1fr)); gap:10px; max-height:430px; overflow-y:auto; padding-right:4px; margin-top:12px; }
+    .swap-card { background:var(--surface2); border:2px solid var(--border); border-radius:var(--radius); cursor:pointer; overflow:hidden; transition:all .15s; }
+    .swap-card:hover { border-color:var(--accent); transform:translateY(-2px); box-shadow:0 4px 16px rgba(192,41,39,.2); }
+    .swap-card.is-current { border-color:var(--accent); box-shadow:0 0 0 2px var(--accent); }
+    .swap-card img,.swap-card .sc-no-img { width:100%; height:85px; object-fit:cover; display:block; }
+    .swap-card .sc-no-img { background:var(--surface); display:flex; align-items:center; justify-content:center; color:var(--text2); font-size:22px; }
+    .swap-card .sc-body { padding:7px 8px; }
+    .swap-card .sc-name { font-size:11px; font-weight:600; line-height:1.3; }
+    .swap-card .sc-meta { font-size:10px; color:var(--text2); margin-top:2px; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="logo">Cardápio Cia <span>v3.0</span></div>
+    <div class="tabs">
+      <button class="active" onclick="showPage('import')">📥 Importar</button>
+      <button onclick="showPage('recipes')">📖 Receitas</button>
+      <button onclick="showPage('plan')">📅 Cardápio</button>
+    </div>
+    <div class="actions">
+      <span class="count-pill" id="topRecipeCount">0 receitas</span>
+      <button class="btn btn-primary" onclick="openCreateModal()">➕ Adicionar Receita</button>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toasts"></div>
+
+  <div class="container">
+    <!-- ═══ IMPORT PAGE ═══ -->
+    <div class="page active" id="page-import">
+      <div class="card">
+        <h2>📥 Importar Receitas de PDFs</h2>
+        <p style="color:var(--text2); margin-bottom:16px;">Selecione os arquivos PDF de receituário para extrair receitas, ingredientes, modo de preparo e imagens.</p>
+
+        <div class="drop-zone" id="dropZone" onclick="document.getElementById('pdfInput').click()">
+          <div class="icon">📄</div>
+          <p>Arraste PDFs aqui ou clique para selecionar</p>
+          <p style="font-size:12px;">Suporta múltiplos arquivos PDF</p>
+        </div>
+        <input type="file" id="pdfInput" multiple accept=".pdf" style="display:none" onchange="handleFileSelect(this.files)">
+
+        <div id="selectedFiles" style="margin-top:16px;"></div>
+
+        <div class="grid-2 mt-16">
+          <div class="form-group">
+            <label>Página inicial (pular planilhas iniciais)</label>
+            <input type="number" id="startPage" value="6" min="1">
+          </div>
+        </div>
+
+        <div style="margin-top:16px;">
+          <button class="btn btn-primary" id="btnExtract" onclick="runExtraction()" disabled>
+            🔍 Extrair Receitas
+          </button>
+        </div>
+
+        <div id="extractLog" class="log-area mt-16" style="display:none;"></div>
+        <div id="extractResult" style="margin-top:12px;"></div>
+      </div>
+    </div>
+
+    <!-- ═══ RECIPES PAGE ═══ -->
+    <div class="page" id="page-recipes">
+      <div class="card">
+        <div class="flex items-center justify-between mb-16">
+          <h2 style="margin-bottom:0;">📖 Todas as Receitas <span class="badge" id="recipeCount">0</span></h2>
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="recipeSearch" placeholder="Buscar receitas..." oninput="debounceSearch()" style="width:260px;">
+          </div>
+        </div>
+        <div class="flex gap-8 mb-16">
+          <select id="categoryFilter" style="width:250px;">
+            <option value="">Todas as categorias</option>
+          </select>
+        </div>
+        <div id="recipesGrid" class="recipe-grid"></div>
+        <div id="paginationInfo"></div>
+        <div id="recipesEmpty" class="empty-state" style="display:none;">
+          <div class="icon">📭</div>
+          <p>Nenhuma receita encontrada. Importe PDFs na aba "Importar".</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ PLAN PAGE ═══ -->
+    <div class="page" id="page-plan">
+      <div class="grid-2">
+        <div class="card">
+          <h2>📅 Gerar Cardápio Semanal</h2>
+          <div class="form-group">
+            <label>Título do cardápio</label>
+            <input type="text" id="planTitle" placeholder="Ex: CARDÁPIO SEMANAL ABRIL 2026">
+          </div>
+
+          <div class="flex gap-16 mb-16">
+            <label class="checkbox">
+              <input type="checkbox" id="chkConsolidate" checked> Consolidar categorias semelhantes
+            </label>
+            <label class="checkbox">
+              <input type="checkbox" id="chkRepetition"> Permitir repetição de receitas
+            </label>
+          </div>
+
+          <div class="flex items-center justify-between mb-8">
+            <h3 style="font-size:15px; font-weight:600;">Categorias e quantidades</h3>
+            <button class="btn btn-ghost btn-sm" onclick="loadPlanCategories()">🔄 Atualizar</button>
+          </div>
+          <div id="categorySelectors"></div>
+        </div>
+
+        <div class="card">
+          <h2>⭐ Receitas Obrigatórias (todos os dias)</h2>
+          <p style="color:var(--text2); font-size:13px; margin-bottom:12px;">Estas receitas aparecerão em todos os 7 dias da semana.</p>
+          <div id="mandatoryList"></div>
+          <div class="flex gap-8 mt-16">
+            <select id="mandatoryRecipeSelect" style="flex:1;"></select>
+            <button class="btn btn-ghost btn-sm" onclick="addMandatory()">+ Adicionar</button>
+          </div>
+
+          <div style="margin-top:32px; border-top:1px solid var(--border); padding-top:20px;">
+            <button class="btn btn-primary" id="btnGenerate" onclick="generatePlan()" style="width:100%;">
+              🎲 Gerar Cardápio
+            </button>
+          </div>
+
+          <div id="planResult" style="margin-top:16px;"></div>
+        </div>
+      </div>
+
+      <!-- ═══ PLAN PREVIEW ═══ -->
+      <div id="planPreview" style="display:none; margin-top:16px;">
+        <div class="card">
+          <div class="flex items-center justify-between mb-16">
+            <div>
+              <h2 id="previewTitle" style="margin-bottom:4px;">&#128203; Prévia do Cardápio</h2>
+              <p style="color:var(--text2); font-size:13px;">Clique em qualquer receita para trocá-la por outra do banco de dados.</p>
+            </div>
+            <div class="flex gap-8" style="flex-wrap:wrap; justify-content:flex-end;">
+              <button class="btn btn-success btn-sm" onclick="exportCurrentPlan('excel')">&#128202; Excel</button>
+              <button class="btn btn-primary btn-sm" onclick="exportCurrentPlan('pdf')">&#128213; PDF</button>
+              <button class="btn btn-sm" style="background:#8B0000;color:#fff;" onclick="exportCurrentPlan('pptx')">&#127909; PPTX</button>
+              <button class="btn btn-ghost btn-sm" id="btnExportAll" onclick="exportCurrentPlan('all')">&#11015;&#65039; Baixar Todos</button>
+            </div>
+          </div>
+          <div id="planPreviewTable" style="overflow-x:auto;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ Recipe Edit Modal ═══ -->
+  <div class="modal-overlay" id="recipeModal">
+    <div class="modal">
+      <h2>✏️ Editar Receita</h2>
+      <input type="hidden" id="editRecipeId">
+      <div class="grid-2">
+        <div class="form-group">
+          <label>Nome da Receita</label>
+          <input type="text" id="editName">
+        </div>
+        <div class="form-group">
+          <label>Categoria</label>
+          <input type="text" id="editCategory">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Ingredientes (um por linha)</label>
+        <textarea id="editIngredients" rows="6"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Modo de Preparo (um passo por linha)</label>
+        <textarea id="editPreparation" rows="6"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Imagem</label>
+        <div id="editImagePreview" style="margin-bottom:8px;"></div>
+        <input type="file" id="editImageInput" accept="image/*">
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-danger btn-sm" id="btnDeleteRecipe" onclick="deleteCurrentRecipe()">🗑️ Excluir</button>
+        <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+        <button class="btn btn-primary" onclick="saveRecipe()">💾 Salvar</button>
+      </div>
+    </div>
+  </div>
+  <!-- ═══ Swap Recipe Modal ═══ -->
+  <div class="modal-overlay" id="swapModal">
+    <div class="modal" style="max-width:880px;">
+      <div class="flex items-center justify-between" style="margin-bottom:16px;">
+        <div>
+          <h2 style="margin-bottom:4px;">&#128260; Trocar Receita</h2>
+          <p id="swapModalInfo" style="color:var(--teal); font-size:13px; font-weight:500;"></p>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="closeSwapModal()">&#10005; Fechar</button>
+      </div>
+      <div class="search-box" style="margin-bottom:4px;">
+        <span class="search-icon">&#128269;</span>
+        <input type="text" id="swapSearch" placeholder="Buscar receita..." oninput="filterSwapGrid()">
+      </div>
+      <div id="swapGrid" class="swap-grid"></div>
+    </div>
+  </div>
+  <script>
+    // ── State ──────────────────────────────────────────────────────────────
+    let selectedFiles = [];
+    let allRecipes = [];
+    let mandatoryRecipes = [];
+    let searchTimeout = null;
+    let recipesLoading = false;
+    let currentPage = 1;
+    const PAGE_SIZE = 60;
+    let extractionInProgress = false;
+    // Plan preview
+    let currentPlan  = null;
+    let swapCtx      = null;  // { rowIdx, dayIdx, categoryLabel, currentId }
+    let swapAll      = [];    // recipes loaded for the current swap picker
+    const DAYS_SHORT = ['SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB', 'DOM'];
+    const DAYS_FULL  = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
+
+    // ── Helpers ───────────────────────────────────────────────────────────
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    async function apiFetch(url, options = {}) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), options.timeout ?? 120000);
+      try {
+        const resp = await fetch(url, { ...options, signal: controller.signal });
+        clearTimeout(timeoutId);
+        if (!resp.ok) {
+          let msg = `Erro ${resp.status}`;
+          try { const d = await resp.json(); if (d.error) msg = d.error; } catch {}
+          throw new Error(msg);
+        }
+        return resp;
+      } catch (err) {
+        clearTimeout(timeoutId);
+        if (err.name === 'AbortError') throw new Error('Tempo limite da requisição esgotado');
+        throw err;
+      }
+    }
+
+    // ── Navigation ────────────────────────────────────────────────────────
+    function showPage(name) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
+      document.getElementById('page-' + name).classList.add('active');
+      document.querySelectorAll('.tabs button').forEach(b => {
+        if (b.textContent.toLowerCase().includes(
+          name === 'import' ? 'importar' : name === 'recipes' ? 'receitas' : 'cardápio'
+        )) b.classList.add('active');
+      });
+      if (name === 'recipes') loadRecipes();
+      if (name === 'plan') { loadPlanCategories(); loadAllRecipesForMandatory(); }
+    }
+
+    // ── Toast ─────────────────────────────────────────────────────────────
+    function toast(msg, type = 'info') {
+      const el = document.createElement('div');
+      el.className = 'toast ' + type;
+      el.textContent = msg;
+      document.getElementById('toasts').appendChild(el);
+      setTimeout(() => el.remove(), 4500);
+    }
+
+    // ── File handling ─────────────────────────────────────────────────────
+    const dropZone = document.getElementById('dropZone');
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault(); dropZone.classList.remove('dragover');
+      handleFileSelect(e.dataTransfer.files);
+    });
+
+    function handleFileSelect(files) {
+      selectedFiles = [...files].filter(f => f.name.toLowerCase().endsWith('.pdf'));
+      const el = document.getElementById('selectedFiles');
+      if (selectedFiles.length === 0) {
+        el.innerHTML = '<p style="color:var(--red); font-size:13px;">Nenhum arquivo PDF encontrado na seleção.</p>';
+        document.getElementById('btnExtract').disabled = true;
+        return;
+      }
+      el.innerHTML = '<div style="font-size:13px; color:var(--text2); margin-bottom:8px;">Arquivos selecionados:</div>' +
+        selectedFiles.map(f => `<div class="pill pill-blue" style="margin:2px 4px;">${escapeHtml(f.name)} <span style="color:var(--text2); font-size:11px;">(${(f.size / 1024 / 1024).toFixed(1)} MB)</span></div>`).join('');
+      document.getElementById('btnExtract').disabled = false;
+    }
+
+    // ── Extraction ────────────────────────────────────────────────────────
+    async function runExtraction() {
+      if (extractionInProgress) return;
+      extractionInProgress = true;
+      const btn = document.getElementById('btnExtract');
+      btn.disabled = true; btn.textContent = '⏳ Extraindo...';
+      const log = document.getElementById('extractLog');
+      log.style.display = 'block'; log.textContent = 'Iniciando extração...\n';
+      document.getElementById('extractResult').innerHTML = '';
+
+      const formData = new FormData();
+      const startPage = document.getElementById('startPage').value || '6';
+      formData.append('startPage', startPage);
+      selectedFiles.forEach(f => formData.append('pdfs', f));
+
+      try {
+        const resp = await apiFetch('/api/extract', { method: 'POST', body: formData, timeout: 600000 });
+        const data = await resp.json();
+        log.textContent += `\n✅ Extração concluída!\n`;
+        log.textContent += `Receitas encontradas: ${data.recipesFound}\n`;
+        log.textContent += `Inseridas: ${data.stats.inserted}\n`;
+        log.textContent += `Atualizadas: ${data.stats.updated}\n`;
+        log.textContent += `Ignoradas (duplicadas): ${data.stats.skipped}\n`;
+        log.textContent += `Total no banco: ${data.stats.total}\n`;
+        document.getElementById('extractResult').innerHTML =
+          `<div class="pill pill-green" style="font-size:14px; padding:8px 16px;">✅ ${data.recipesFound} receitas extraídas com sucesso!</div>`;
+        toast('Extração concluída!', 'success');
+        updateTopRecipeCount();
+      } catch (err) {
+        log.textContent += `\n❌ Erro: ${err.message}\n`;
+        toast('Erro na extração: ' + err.message, 'error');
+      }
+      extractionInProgress = false;
+      btn.disabled = false; btn.textContent = '🔍 Extrair Receitas';
+    }
+
+    // ── Recipes ───────────────────────────────────────────────────────────
+    async function loadRecipes() {
+      if (recipesLoading) return;
+      recipesLoading = true;
+      const grid = document.getElementById('recipesGrid');
+      const empty = document.getElementById('recipesEmpty');
+      grid.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text2);">⏳ Carregando receitas...</div>';
+      empty.style.display = 'none';
+
+      const q = document.getElementById('recipeSearch').value.trim();
+      const url = q ? `/api/recipes?q=${encodeURIComponent(q)}` : '/api/recipes';
+      try {
+        const resp = await apiFetch(url);
+        allRecipes = await resp.json();
+
+        const catFilter = document.getElementById('categoryFilter');
+        const currentVal = catFilter.value;
+        const cats = [...new Set(allRecipes.map(r => r.categoryLabel))].sort();
+        catFilter.innerHTML = '<option value="">Todas as categorias</option>' +
+          cats.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+        catFilter.value = currentVal;
+
+        currentPage = 1;
+        renderRecipeGrid();
+        updateTopRecipeCount();
+      } catch (err) {
+        grid.innerHTML = '';
+        toast('Erro ao carregar receitas: ' + err.message, 'error');
+      }
+      recipesLoading = false;
+    }
+
+    function renderRecipeGrid() {
+      const catFilter = document.getElementById('categoryFilter');
+      let filtered = allRecipes;
+      if (catFilter.value) filtered = allRecipes.filter(r => r.categoryLabel === catFilter.value);
+
+      document.getElementById('recipeCount').textContent = filtered.length;
+      const grid = document.getElementById('recipesGrid');
+      const empty = document.getElementById('recipesEmpty');
+
+      if (filtered.length === 0) {
+        grid.innerHTML = ''; empty.style.display = 'block';
+        document.getElementById('paginationInfo').innerHTML = '';
+        return;
+      }
+      empty.style.display = 'none';
+
+      const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+      if (currentPage > totalPages) currentPage = totalPages;
+      const start = (currentPage - 1) * PAGE_SIZE;
+      const pageItems = filtered.slice(start, start + PAGE_SIZE);
+
+      grid.innerHTML = pageItems.map(r => `
+        <div class="recipe-card" onclick="openRecipeModal(${r.id})">
+          ${r.imagePath
+            ? `<img class="card-img" src="/api/recipe-image/${r.id}" onerror="this.outerHTML='<div class=\\'card-img-placeholder\\'>Sem imagem</div>'" loading="lazy">`
+            : '<div class="card-img-placeholder">📷 Sem imagem</div>'}
+          <div class="card-body">
+            <div class="cat">${escapeHtml(r.categoryLabel)}</div>
+            <h3>${escapeHtml(r.recipeName)}</h3>
+            <div class="meta">${r.ingredientsLines.length} ingredientes · ${r.preparationLines.length} passos</div>
+          </div>
+        </div>
+      `).join('');
+
+      const info = document.getElementById('paginationInfo');
+      if (totalPages <= 1) { info.innerHTML = ''; return; }
+      info.innerHTML = `
+        <div class="flex items-center justify-between" style="margin-top:16px;">
+          <button class="btn btn-ghost btn-sm" ${currentPage <= 1 ? 'disabled' : ''} onclick="changePage(-1)">← Anterior</button>
+          <span style="color:var(--text2); font-size:13px;">Página ${currentPage} de ${totalPages} (${filtered.length} receitas)</span>
+          <button class="btn btn-ghost btn-sm" ${currentPage >= totalPages ? 'disabled' : ''} onclick="changePage(1)">Próxima →</button>
+        </div>
+      `;
+    }
+
+    function changePage(delta) {
+      currentPage += delta;
+      renderRecipeGrid();
+      document.getElementById('recipesGrid').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function debounceSearch() {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => { currentPage = 1; loadRecipes(); }, 300);
+    }
+
+    // ── Recipe Modal ──────────────────────────────────────────────────────
+    async function openRecipeModal(id) {
+      try {
+        const resp = await apiFetch(`/api/recipes/${id}`);
+        const r = await resp.json();
+        document.querySelector('#recipeModal .modal h2').textContent = '✏️ Editar Receita';
+        document.getElementById('btnDeleteRecipe').style.display = 'inline-flex';
+        document.getElementById('editRecipeId').value = r.id;
+        document.getElementById('editName').value = r.recipeName;
+        document.getElementById('editCategory').value = r.categoryLabel;
+        document.getElementById('editIngredients').value = r.ingredientsLines.join('\n');
+        document.getElementById('editPreparation').value = r.preparationLines.join('\n');
+        document.getElementById('editImageInput').value = '';
+        document.getElementById('editImagePreview').innerHTML = r.imagePath
+          ? `<img src="/api/recipe-image/${r.id}" style="max-width:300px; max-height:200px; border-radius:8px;" onerror="this.outerHTML='<span style=\\'color:var(--text2)\\'>Imagem não encontrada</span>'">`
+          : '<span style="color:var(--text2)">Sem imagem</span>';
+        document.getElementById('recipeModal').classList.add('active');
+        setTimeout(() => document.getElementById('editName').focus(), 100);
+      } catch (err) {
+        toast('Erro ao abrir receita: ' + err.message, 'error');
+      }
+    }
+
+    function openCreateModal() {
+      document.getElementById('editRecipeId').value = '';
+      document.getElementById('editName').value = '';
+      document.getElementById('editCategory').value = '';
+      document.getElementById('editIngredients').value = '';
+      document.getElementById('editPreparation').value = '';
+      document.getElementById('editImageInput').value = '';
+      document.getElementById('editImagePreview').innerHTML = '<span style="color:var(--text2)">Sem imagem</span>';
+      document.querySelector('#recipeModal .modal h2').textContent = '➕ Adicionar Receita';
+      document.getElementById('btnDeleteRecipe').style.display = 'none';
+      document.getElementById('recipeModal').classList.add('active');
+      setTimeout(() => document.getElementById('editName').focus(), 100);
+    }
+
+    function closeModal() {
+      document.getElementById('recipeModal').classList.remove('active');
+      document.getElementById('editImageInput').value = '';
+    }
+
+    async function saveRecipe() {
+      const id = document.getElementById('editRecipeId').value;
+      const name = document.getElementById('editName').value.trim();
+      const catLabel = document.getElementById('editCategory').value.trim();
+      if (!name) { toast('Nome da receita é obrigatório', 'error'); return; }
+      if (!catLabel) { toast('Categoria é obrigatória', 'error'); return; }
+
+      const parts = catLabel.match(/^(\d+(?:\.\d+)?)\s*-\s*(.+)$/);
+      const body = {
+        recipeName: name,
+        categoryLabel: catLabel,
+        categoryCode: parts ? parts[1] : catLabel,
+        categoryName: parts ? parts[2].trim() : catLabel,
+        ingredientsLines: document.getElementById('editIngredients').value.split('\n').filter(l => l.trim()),
+        preparationLines: document.getElementById('editPreparation').value.split('\n').filter(l => l.trim()),
+      };
+
+      try {
+        let savedId = id;
+        if (savedId) {
+          await apiFetch(`/api/recipes/${savedId}`, {
+            method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+          });
+        } else {
+          const resp = await apiFetch('/api/recipes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+          const created = await resp.json();
+          savedId = created.id;
+        }
+
+        const imgInput = document.getElementById('editImageInput');
+        if (imgInput.files.length > 0 && savedId) {
+          const fd = new FormData();
+          fd.append('image', imgInput.files[0]);
+          await apiFetch(`/api/recipes/${savedId}/image`, { method: 'POST', body: fd });
+        }
+
+        toast('Receita salva!', 'success');
+        closeModal();
+        loadRecipes();
+        updateTopRecipeCount();
+      } catch (err) {
+        toast('Erro ao salvar: ' + err.message, 'error');
+      }
+    }
+
+    async function deleteCurrentRecipe() {
+      const id = document.getElementById('editRecipeId').value;
+      if (!confirm('Tem certeza que deseja excluir esta receita?')) return;
+      try {
+        await apiFetch(`/api/recipes/${id}`, { method: 'DELETE' });
+        toast('Receita excluída', 'success');
+        closeModal();
+        loadRecipes();
+        updateTopRecipeCount();
+      } catch (err) {
+        toast('Erro ao excluir: ' + err.message, 'error');
+      }
+    }
+
+    async function updateTopRecipeCount() {
+      try {
+        const resp = await apiFetch('/api/recipes/count');
+        const data = await resp.json();
+        const total = Number(data.total ?? 0);
+        const el = document.getElementById('topRecipeCount');
+        if (el) el.textContent = `${total} receitas`;
+      } catch {
+        const el = document.getElementById('topRecipeCount');
+        if (el) el.textContent = '— receitas';
+      }
+    }
+
+    // ── Plan ──────────────────────────────────────────────────────────────
+    async function loadPlanCategories() {
+      const consolidate = document.getElementById('chkConsolidate').checked;
+      const el = document.getElementById('categorySelectors');
+      el.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text2);">⏳ Carregando categorias...</div>';
+      try {
+        const resp = await apiFetch(`/api/categories?consolidate=${consolidate}`);
+        const cats = await resp.json();
+        if (cats.length === 0) {
+          el.innerHTML = '<div class="empty-state"><p>Nenhuma categoria encontrada. Importe PDFs primeiro.</p></div>';
+          return;
+        }
+        el.innerHTML = cats.map(c => `
+          <div class="category-row">
+            <div class="cat-name">${escapeHtml(c.categoryLabel)}</div>
+            <div class="cat-count">${c.totalRecipes} receitas</div>
+            <input type="number" min="0" max="${c.totalRecipes}" value="0" data-cat="${escapeHtml(c.categoryLabel)}" data-max="${c.totalRecipes}">
+          </div>
+        `).join('');
+      } catch (err) {
+        el.innerHTML = '';
+        toast('Erro ao carregar categorias: ' + err.message, 'error');
+      }
+    }
+
+    async function loadAllRecipesForMandatory() {
+      try {
+        const resp = await apiFetch('/api/recipes');
+        const recipes = await resp.json();
+        const sel = document.getElementById('mandatoryRecipeSelect');
+        sel.innerHTML = '<option value="">Selecione uma receita...</option>' +
+          recipes.map(r => `<option value="${r.id}">${escapeHtml(r.categoryLabel)} — ${escapeHtml(r.recipeName)}</option>`).join('');
+      } catch (err) {
+        toast('Erro ao carregar receitas para obrigatórias', 'error');
+      }
+    }
+
+    function addMandatory() {
+      const sel = document.getElementById('mandatoryRecipeSelect');
+      const id = parseInt(sel.value);
+      if (!id || isNaN(id)) return;
+      const text = sel.options[sel.selectedIndex].textContent;
+      if (mandatoryRecipes.find(m => m.id === id)) { toast('Receita já é obrigatória', 'info'); return; }
+      mandatoryRecipes.push({ id, name: text });
+      renderMandatory();
+      sel.value = '';
+    }
+
+    function removeMandatory(id) {
+      mandatoryRecipes = mandatoryRecipes.filter(m => m.id !== id);
+      renderMandatory();
+    }
+
+    function renderMandatory() {
+      const el = document.getElementById('mandatoryList');
+      if (mandatoryRecipes.length === 0) { el.innerHTML = '<p style="color:var(--text2); font-size:13px;">Nenhuma receita obrigatória.</p>'; return; }
+      el.innerHTML = mandatoryRecipes.map(m => `
+        <div class="mandatory-item">
+          <span class="name">${escapeHtml(m.name)}</span>
+          <button class="remove" onclick="removeMandatory(${m.id})">✕</button>
+        </div>
+      `).join('');
+    }
+
+    async function generatePlan() {
+      const btn = document.getElementById('btnGenerate');
+      btn.disabled = true; btn.textContent = '⏳ Gerando...';
+      document.getElementById('planResult').innerHTML = '';
+
+      const selection = {};
+      document.querySelectorAll('#categorySelectors input[type="number"]').forEach(inp => {
+        const val = parseInt(inp.value) || 0;
+        if (val > 0) selection[inp.dataset.cat] = val;
+      });
+
+      if (Object.keys(selection).length === 0 && mandatoryRecipes.length === 0) {
+        toast('Selecione pelo menos uma categoria ou receita obrigatória', 'info');
+        btn.disabled = false; btn.textContent = '🎲 Gerar Cardápio'; return;
+      }
+
+      const body = {
+        selection,
+        title: document.getElementById('planTitle').value.trim() || undefined,
+        consolidate: document.getElementById('chkConsolidate').checked,
+        allowRepetition: document.getElementById('chkRepetition').checked,
+        mandatoryRecipeIds: mandatoryRecipes.map(m => m.id),
+      };
+
+      try {
+        const resp = await apiFetch('/api/plan', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+          timeout: 300000,
+        });
+        const data = await resp.json();
+
+        // Store & render the editable preview
+        currentPlan = data.plan;
+        if (currentPlan) renderPlanPreview(currentPlan);
+
+        document.getElementById('planResult').innerHTML = `
+          <div style="padding:10px 0 4px;">
+            <div class="pill pill-green">✅ ${escapeHtml(data.title)}</div>
+            <p style="color:var(--text2); font-size:12px; margin-top:6px;">${data.totalRecipes} receitas · ${data.totalRows} linhas &mdash; edite na pr&eacute;via abaixo &#8595;</p>
+          </div>
+        `;
+        toast('Cardápio gerado! Edite na prévia abaixo.', 'success');
+      } catch (err) {
+        document.getElementById('planResult').innerHTML = `<div class="pill pill-red" style="font-size:13px; padding:6px 12px;">❌ ${escapeHtml(err.message)}</div>`;
+        toast('Erro ao gerar: ' + err.message, 'error');
+      }
+      btn.disabled = false; btn.textContent = '🎲 Gerar Cardápio';
+    }
+
+    // ── Plan Preview ──────────────────────────────────────────────────────
+    function renderPlanPreview(plan) {
+      currentPlan = plan;
+      document.getElementById('previewTitle').textContent = '📋 ' + plan.title;
+
+      const tbody = plan.rows.map((row, ri) => {
+        const cells = row.days.map((day, di) => {
+          if (!day) {
+            return `<td><button class="plan-cell is-empty" onclick="openSwapPicker(${ri},${di})"><span class="swap-hint">✏️</span>—</button></td>`;
+          }
+          const name = escapeHtml(day.recipeName);
+          return `<td><button class="plan-cell" onclick="openSwapPicker(${ri},${di})" title="${name}"><span class="swap-hint">✏️</span>${name}</button></td>`;
+        }).join('');
+        return `<tr>
+          <td class="td-seq">${row.sequence}</td>
+          <td class="td-cat" title="${escapeHtml(row.categoryLabel)}">${escapeHtml(row.categoryLabel)}</td>
+          ${cells}
+        </tr>`;
+      }).join('');
+
+      document.getElementById('planPreviewTable').innerHTML = `
+        <table class="plan-tbl">
+          <thead><tr>
+            <th style="width:40px;">#</th>
+            <th>Categoria</th>
+            ${DAYS_SHORT.map(d => `<th style="width:130px;">${d}</th>`).join('')}
+          </tr></thead>
+          <tbody>${tbody}</tbody>
+        </table>
+      `;
+
+      const previewEl = document.getElementById('planPreview');
+      previewEl.style.display = 'block';
+      setTimeout(() => previewEl.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
+    }
+
+    // ── Swap Picker ───────────────────────────────────────────────────────
+    async function openSwapPicker(rowIdx, dayIdx) {
+      const row = currentPlan.rows[rowIdx];
+      const day = row.days[dayIdx];
+      swapCtx = { rowIdx, dayIdx, categoryLabel: row.categoryLabel, currentId: day?.recipeId ?? null };
+
+      const dayLabel = DAYS_FULL[dayIdx];
+      const current  = day ? ` (atual: ${day.recipeName})` : '';
+      document.getElementById('swapModalInfo').textContent = `${dayLabel} — ${row.categoryLabel}${current}`;
+      document.getElementById('swapSearch').value = '';
+      document.getElementById('swapGrid').innerHTML =
+        '<div style="text-align:center;padding:20px;color:var(--text2);grid-column:1/-1;">⏳ Carregando...</div>';
+      document.getElementById('swapModal').classList.add('active');
+
+      try {
+        const resp = await apiFetch(`/api/recipes?category=${encodeURIComponent(row.categoryLabel)}`);
+        swapAll = await resp.json();
+        if (swapAll.length === 0) {
+          // Fallback: load all and filter client-side (e.g. consolidated categories)
+          const r2  = await apiFetch('/api/recipes');
+          swapAll   = (await r2.json()).filter(r => r.categoryLabel === row.categoryLabel);
+        }
+        renderSwapGrid(swapAll);
+      } catch (err) {
+        document.getElementById('swapGrid').innerHTML =
+          `<div style="color:var(--red);grid-column:1/-1;">Erro: ${escapeHtml(err.message)}</div>`;
+      }
+    }
+
+    function renderSwapGrid(recipes) {
+      if (!recipes.length) {
+        document.getElementById('swapGrid').innerHTML =
+          '<div style="text-align:center;padding:20px;color:var(--text2);grid-column:1/-1;">Nenhuma receita encontrada.</div>';
+        return;
+      }
+      document.getElementById('swapGrid').innerHTML = recipes.map(r => {
+        const isCur  = swapCtx && r.id === swapCtx.currentId;
+        const imgHtml = r.imagePath
+          ? `<img src="/api/recipe-image/${r.id}" loading="lazy" alt="" onerror="this.outerHTML='<div class=\\'sc-no-img\\'>🍽️</div>'">`
+          : '<div class="sc-no-img">🍽️</div>';
+        return `<div class="swap-card${isCur ? ' is-current' : ''}" onclick="pickSwapRecipe(${r.id})" title="${escapeHtml(r.recipeName)}">
+          ${imgHtml}
+          <div class="sc-body">
+            <div class="sc-name">${escapeHtml(r.recipeName)}</div>
+            <div class="sc-meta">${r.ingredientsLines.length} ingredientes${isCur ? ' · ✓ atual' : ''}</div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    function filterSwapGrid() {
+      const q = document.getElementById('swapSearch').value.toLowerCase().trim();
+      renderSwapGrid(q ? swapAll.filter(r => r.recipeName.toLowerCase().includes(q)) : swapAll);
+    }
+
+    async function pickSwapRecipe(recipeId) {
+      if (!swapCtx) return;
+      const { rowIdx, dayIdx } = swapCtx;
+      try {
+        const resp   = await apiFetch(`/api/recipes/${recipeId}`);
+        const recipe = await resp.json();
+        currentPlan.rows[rowIdx].days[dayIdx] = { recipeId: recipe.id, recipeName: recipe.recipeName, recipe };
+        closeSwapModal();
+        renderPlanPreview(currentPlan);
+        // Scroll the affected row into view after re-render
+        setTimeout(() => {
+          const rows = document.querySelectorAll('#planPreviewTable tbody tr');
+          if (rows[rowIdx]) rows[rowIdx].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 150);
+        toast('Receita trocada!', 'success');
+      } catch (err) {
+        toast('Erro ao trocar receita: ' + err.message, 'error');
+      }
+    }
+
+    function closeSwapModal() {
+      document.getElementById('swapModal').classList.remove('active');
+      swapCtx = null;
+      swapAll = [];
+    }
+
+    async function exportCurrentPlan(type) {
+      if (!currentPlan) { toast('Nenhum cardápio gerado ainda', 'info'); return; }
+      const btn = document.getElementById('btnExportAll');
+      if (type === 'all' && btn) { btn.disabled = true; btn.textContent = '⏳ Exportando...'; }
+      try {
+        const resp = await apiFetch('/api/plan/export', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ plan: currentPlan }),
+          timeout: 180000,
+        });
+        const data = await resp.json();
+        const urls = { excel: data.excelUrl, pdf: data.pdfUrl, pptx: data.pptxUrl };
+        const list = type === 'all' ? Object.values(urls) : [urls[type]];
+        list.forEach((url, i) => setTimeout(() => {
+          const a = Object.assign(document.createElement('a'), { href: url, download: '' });
+          document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        }, i * 600));
+        toast('Exportação iniciada!', 'success');
+      } catch (err) {
+        toast('Erro ao exportar: ' + err.message, 'error');
+      }
+      if (type === 'all' && btn) { btn.disabled = false; btn.textContent = '⬇️ Baixar Todos'; }
+    }
+
+    // ── Keyboard shortcuts ────────────────────────────────────────────────
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') { closeModal(); closeSwapModal(); }
+    });
+
+    window.addEventListener('beforeunload', e => {
+      if (extractionInProgress) {
+        e.preventDefault();
+        e.returnValue = 'Extração em andamento. Deseja sair?';
+      }
+    });
+
+    // ── Init ──────────────────────────────────────────────────────────────
+    document.getElementById('chkConsolidate').addEventListener('change', loadPlanCategories);
+    document.getElementById('categoryFilter').addEventListener('change', () => { currentPage = 1; renderRecipeGrid(); });
+    renderMandatory();
+    updateTopRecipeCount();
+    document.getElementById('recipeModal').addEventListener('click', e => {
+      if (e.target === e.currentTarget) closeModal();
+    });
+    document.getElementById('swapModal').addEventListener('click', e => {
+      if (e.target === e.currentTarget) closeSwapModal();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,62 @@
+{
+  "appId": "com.cardapiocia.app",
+  "productName": "Cardápio Cia",
+  "copyright": "Cardápio Cia v3.0 — Companhia do Churrasco",
+
+  "extraMetadata": {
+    "main": "electron-main.cjs"
+  },
+
+  "npmRebuild": false,
+  "forceCodeSigning": false,
+
+  "files": [
+    "electron-main.cjs"
+  ],
+
+  "extraResources": [
+    {
+      "from": "release/cardapio-cia-build.exe",
+      "to": "server/cardapio-cia-build.exe"
+    },
+    {
+      "from": "release/public",
+      "to": "public"
+    },
+    {
+      "from": "release/assets",
+      "to": "assets"
+    }
+  ],
+
+  "win": {
+    "target": [
+      {
+        "target": "nsis",
+        "arch": ["x64"]
+      },
+      {
+        "target": "portable",
+        "arch": ["x64"]
+      }
+    ]
+  },
+
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "Cardápio Cia",
+    "artifactName": "Cardapio-Cia-v3.0-Setup.exe",
+    "deleteAppDataOnUninstall": false
+  },
+
+  "portable": {
+    "artifactName": "Cardapio-Cia-v3.0-Portable.exe"
+  },
+
+  "directories": {
+    "output": "release/electron-dist"
+  }
+}
