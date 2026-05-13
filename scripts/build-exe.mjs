@@ -62,7 +62,14 @@ function main() {
     "--platform=node",
     "--target=node24",
     "--format=cjs",
-    "--packages=external",
+    // Keep native/problematic packages external; pdfjs-dist and pptxgenjs are
+    // bundled inline to avoid the pkg dynamic-import limitation with ESM modules.
+    "--external:better-sqlite3",
+    "--external:exceljs",
+    "--external:express",
+    "--external:multer",
+    "--external:pdfkit",
+    "--external:pngjs",
     `--outfile=${pkgEntryPath}`,
   ];
 
@@ -71,6 +78,26 @@ function main() {
     runShell([quoteArg(esbuildCmd), ...esbuildArgs.map(quoteArg)].join(" "));
   } else {
     run(path.join(rootDir, "node_modules", ".bin", "esbuild"), esbuildArgs);
+  }
+
+  // Patch remaining dynamic import() calls for Node built-ins that esbuild
+  // leaves as-is inside bundled CJS code (e.g. pptxgenjs lazily imports
+  // node:fs and node:https). pkg cannot handle these dynamic imports, so
+  // replace them with synchronous require() wrapped in Promise.resolve().
+  {
+    let bundleCode = fs.readFileSync(pkgEntryPath, "utf8");
+    const builtins = ["node:fs", "node:https", "node:http", "node:path", "node:url",
+                      "node:crypto", "node:stream", "node:buffer", "node:util",
+                      "node:os", "node:zlib", "node:events", "node:assert"];
+    for (const mod of builtins) {
+      const dq = `import("${mod}")`;
+      const sq = `import('${mod}')`;
+      const replacement = (q) => `Promise.resolve({default:require(${q}), ...require(${q})})`;
+      bundleCode = bundleCode.replaceAll(dq, replacement(`"${mod}"`));
+      bundleCode = bundleCode.replaceAll(sq, replacement(`'${mod}'`));
+    }
+    fs.writeFileSync(pkgEntryPath, bundleCode, "utf8");
+    console.log("Patched dynamic built-in imports in bundle.");
   }
 
   const pkgArgs = [

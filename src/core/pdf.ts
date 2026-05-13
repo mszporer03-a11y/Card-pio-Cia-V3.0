@@ -2,6 +2,10 @@ import fs from "node:fs";
 import path from "node:path";
 import { PNG } from "pngjs";
 import type { PageLine, PageTextItem } from "./types.js";
+// Static import so esbuild bundles pdf.worker.mjs inline — avoids the
+// /*webpackIgnore*/ dynamic import inside pdfjs that pkg cannot handle.
+// @ts-expect-error: no type declarations for pdfjs worker bundle
+import * as _pdfjsWorkerBundle from "pdfjs-dist/legacy/build/pdf.worker.mjs";
 
 let pdfJsModulePromise: Promise<typeof import("pdfjs-dist/legacy/build/pdf.mjs")> | undefined;
 
@@ -453,7 +457,18 @@ export async function extractAllRecipeImages(page: any, outputPathBase: string, 
 
 async function loadPdfJs(): Promise<typeof import("pdfjs-dist/legacy/build/pdf.mjs")> {
   if (!pdfJsModulePromise) {
-    pdfJsModulePromise = import("pdfjs-dist/legacy/build/pdf.mjs");
+    pdfJsModulePromise = import("pdfjs-dist/legacy/build/pdf.mjs").then((pdfjs) => {
+      // Inject the pre-bundled WorkerMessageHandler so pdfjs never needs to
+      // dynamically import pdf.worker.mjs (which fails in @yao-pkg/pkg).
+      const wmh = (_pdfjsWorkerBundle as any).WorkerMessageHandler;
+      if (wmh && (pdfjs as any).PDFWorker) {
+        Object.defineProperty((pdfjs as any).PDFWorker, "_setupFakeWorkerGlobal", {
+          get: () => Promise.resolve(wmh),
+          configurable: true,
+        });
+      }
+      return pdfjs;
+    });
   }
   return pdfJsModulePromise;
 }
