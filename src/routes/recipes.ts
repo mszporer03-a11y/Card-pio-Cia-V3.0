@@ -40,13 +40,25 @@ const imgUpload = multer({
 
 recipesRouter.get("/recipes", (req: Request, res: Response) => {
   try {
-    const db       = openDatabase();
-    const query    = req.query.q as string | undefined;
-    const category = req.query.category as string | undefined;
+    const db         = openDatabase();
+    const query      = req.query.q as string | undefined;
+    const category   = req.query.category as string | undefined;
+    // categories[] supports fetching from multiple consolidated source labels at once
+    const categories = req.query["categories[]"];
+    const labelList  = Array.isArray(categories) ? categories as string[] : typeof categories === "string" ? [categories] : null;
     let recipes;
-    if (query)         recipes = searchRecipes(db, query);
-    else if (category) recipes = getRecipesByCategory(db, category);
-    else               recipes = listStoredRecipes(db);
+    if (query) {
+      recipes = searchRecipes(db, query);
+    } else if (labelList && labelList.length > 0) {
+      const seen = new Set<number>();
+      recipes = labelList
+        .flatMap((label) => getRecipesByCategory(db, label))
+        .filter((r) => { if (seen.has(r.id)) return false; seen.add(r.id); return true; });
+    } else if (category) {
+      recipes = getRecipesByCategory(db, category);
+    } else {
+      recipes = listStoredRecipes(db);
+    }
     res.json(recipes);
   } catch (error: any) {
     res.status(500).json({ error: error.message });

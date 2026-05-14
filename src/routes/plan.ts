@@ -97,6 +97,7 @@ planRouter.post("/plan/export", async (req: Request, res: Response) => {
       sequence:      typeof row.sequence === "number" ? row.sequence : i + 1,
       categoryLabel: String(row.categoryLabel ?? ""),
       categoryName:  String(row.categoryName ?? row.categoryLabel ?? ""),
+      sourceLabels:  Array.isArray(row.sourceLabels) ? row.sourceLabels.map(String) : [String(row.categoryLabel ?? "")],
       days: Array.isArray(row.days)
         ? (row.days as any[]).map((day): PlannedDay | null => {
             if (!day || typeof day.recipeId !== "number" || day.recipeId < 1) return null;

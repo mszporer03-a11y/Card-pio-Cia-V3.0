@@ -59,6 +59,7 @@ export type PlannedRow = {
   sequence: number;
   categoryLabel: string;
   categoryName: string;
+  sourceLabels: string[];
   days: Array<PlannedDay | null>;
 };
 

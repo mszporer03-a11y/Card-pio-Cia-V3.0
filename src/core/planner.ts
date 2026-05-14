@@ -46,7 +46,7 @@ export async function generateWeeklyPlan(options: GeneratePlanOptions): Promise<
         recipeName: recipe.recipeName,
         recipe,
       }));
-      rows.push({ sequence, categoryLabel: recipe.categoryLabel, categoryName: recipe.categoryName, days });
+      rows.push({ sequence, categoryLabel: recipe.categoryLabel, categoryName: recipe.categoryName, sourceLabels: [recipe.categoryLabel], days });
       sequence += 1;
     }
   }
@@ -106,7 +106,7 @@ export async function generateWeeklyPlan(options: GeneratePlanOptions): Promise<
         if (!recipe) return null;
         return { recipeId: recipe.id, recipeName: recipe.recipeName, recipe };
       });
-      rows.push({ sequence, categoryLabel: resolvedCategory.categoryLabel, categoryName: resolvedCategory.categoryName, days });
+      rows.push({ sequence, categoryLabel: resolvedCategory.categoryLabel, categoryName: resolvedCategory.categoryName, sourceLabels: resolvedCategory.sourceLabels, days });
       sequence += 1;
     }
   }
@@ -143,43 +143,45 @@ function getPlanningCategoryPools(database: BetterSqlite3.Database, consolidateS
     }));
   }
 
-  const groupsByCode = new Map<string, CategoryPool[]>();
+  // Flat global grouping — no code-based bucketing so cross-code duplicates are caught.
+  const groups: CategoryPool[] = [];
   for (const category of categories) {
-    const { code, name } = splitCategoryLabel(category.categoryLabel);
-    const codeGroups = groupsByCode.get(code) ?? [];
-    const matchingGroup = codeGroups.find((group) => shouldConsolidateCategoryNames(group.categoryName, name));
+    const name = extractCategoryName(category.categoryLabel);
+    const matchingGroup = groups.find((g) => shouldConsolidateCategoryNames(g.categoryName, name));
     if (matchingGroup) {
       matchingGroup.sourceLabels.push(category.categoryLabel);
       matchingGroup.totalRecipes += category.totalRecipes;
     } else {
-      codeGroups.push({
-        categoryLabel: `${code} - ${name}`,
+      groups.push({
+        categoryLabel: category.categoryLabel,
         categoryName: name,
         sourceLabels: [category.categoryLabel],
         totalRecipes: category.totalRecipes,
       });
-      codeGroups.sort((left, right) => normalizeText(left.categoryName).length - normalizeText(right.categoryName).length);
     }
-    groupsByCode.set(code, codeGroups);
   }
-  return [...groupsByCode.values()].flat();
+  return groups;
 }
 
-function splitCategoryLabel(categoryLabel: string): { code: string; name: string } {
-  const match = categoryLabel.match(/^(\d+(?:\.\d+)?)\s*-\s*(.+)$/);
-  if (!match) return { code: categoryLabel, name: categoryLabel };
-  return { code: match[1], name: match[2] };
+function extractCategoryName(categoryLabel: string): string {
+  const match = categoryLabel.match(/^[\d.]+\s*[-\u2013]\s*(.+)$/);
+  return match ? match[1].trim() : categoryLabel.trim();
 }
 
 function shouldConsolidateCategoryNames(left: string, right: string): boolean {
-  const normalizedLeft = normalizeText(left);
-  const normalizedRight = normalizeText(right);
-  if (normalizedLeft === normalizedRight) return true;
-  if (normalizedLeft.startsWith(`${normalizedRight} `) || normalizedRight.startsWith(`${normalizedLeft} `)) return true;
-  const stripSuffix = (s: string) => s.replace(/[\s/]+\d+$/, "").replace(/[\s/]+[A-Z]$/, "").trim();
-  const baseLeft = stripSuffix(normalizedLeft);
-  const baseRight = stripSuffix(normalizedRight);
-  if (baseLeft === baseRight && baseLeft.length >= 4) return true;
-  if (baseLeft.startsWith(`${baseRight} `) || baseRight.startsWith(`${baseLeft} `)) return true;
+  const nl = normalizeText(left);
+  const nr = normalizeText(right);
+  if (nl === nr) return true;
+  // singular/plural (trailing S)
+  if (nl + "S" === nr || nr + "S" === nl) return true;
+  // one is a prefix of the other (word boundary)
+  if (nl.startsWith(nr + " ") || nr.startsWith(nl + " ")) return true;
+  // strip trailing number/letter suffix, then retry
+  const strip = (s: string) => s.replace(/[\s/]+\d+$/, "").replace(/[\s/]+[A-Z]$/, "").trim();
+  const bl = strip(nl);
+  const br = strip(nr);
+  if (bl === br && bl.length >= 4) return true;
+  if ((bl + "S" === br || br + "S" === bl) && bl.length >= 4) return true;
+  if (bl.startsWith(br + " ") || br.startsWith(bl + " ")) return true;
   return false;
 }

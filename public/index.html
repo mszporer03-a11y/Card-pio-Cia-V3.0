@@ -873,10 +873,12 @@
       document.getElementById('swapModal').classList.add('active');
 
       try {
-        const resp = await apiFetch(`/api/recipes?category=${encodeURIComponent(row.categoryLabel)}`);
+        const sourceLabels = row.sourceLabels?.length ? row.sourceLabels : [row.categoryLabel];
+        const params = sourceLabels.map(l => `categories[]=${encodeURIComponent(l)}`).join('&');
+        const resp = await apiFetch(`/api/recipes?${params}`);
         swapAll = await resp.json();
         if (swapAll.length === 0) {
-          // Fallback: load all and filter client-side (e.g. consolidated categories)
+          // Fallback: load all and filter client-side
           const r2  = await apiFetch('/api/recipes');
           swapAll   = (await r2.json()).filter(r => r.categoryLabel === row.categoryLabel);
         }
