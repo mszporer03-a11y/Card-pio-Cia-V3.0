@@ -3,6 +3,7 @@ import path from "node:path";
 import PDFDocument from "pdfkit";
 import type { PlannedDay, PlannedRow, RecipeRecord, WeeklyPlan } from "../core/types.js";
 import { chunkArray, resolveRuntimePath } from "../core/utils.js";
+import { getImagesDir } from "../core/database.js";
 
 // ── Page geometry ─────────────────────────────────────────────────────────────
 const PW = 720; const PH = 540; const M = 8;
@@ -347,8 +348,9 @@ function drawRecipeCard(doc: PDFKit.PDFDocument, recipe: RecipeRecord, cardY: nu
   const photoX = DIVIDER_X + 8; const photoY = cardY + CARD_HDR_H + 6;
   const photoW = TBL_W - TEXT_COL_W - 16; const photoH = CARD_H - CARD_HDR_H - 12;
 
-  if (recipe.imagePath && fs.existsSync(recipe.imagePath)) {
-    doc.image(recipe.imagePath, photoX, photoY, { fit: [photoW, photoH], align: "center", valign: "center" });
+  const fullImgPath = recipe.imagePath ? path.join(getImagesDir(), recipe.imagePath) : null;
+  if (fullImgPath && fs.existsSync(fullImgPath)) {
+    doc.image(fullImgPath, photoX, photoY, { fit: [photoW, photoH], align: "center", valign: "center" });
   } else {
     doc.font("Helvetica").fontSize(9).fillColor("#888888")
       .text("Sem imagem", photoX, photoY + photoH / 2 - 9, { width: photoW, align: "center", lineBreak: false });

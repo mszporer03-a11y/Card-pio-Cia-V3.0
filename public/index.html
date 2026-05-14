@@ -282,7 +282,10 @@
           </div>
 
           <div class="flex items-center justify-between mb-8">
-            <h3 style="font-size:15px; font-weight:600;">Categorias e quantidades</h3>
+            <div>
+              <h3 style="font-size:15px; font-weight:600;">Categorias e quantidades</h3>
+              <p style="color:var(--text2); font-size:12px; margin:2px 0 0;">Quantidade = nº de receitas por categoria <strong>por dia</strong>. O sorteio usa todas as receitas da categoria.</p>
+            </div>
             <button class="btn btn-ghost btn-sm" onclick="loadPlanCategories()">🔄 Atualizar</button>
           </div>
           <div id="categorySelectors"></div>
@@ -722,7 +725,7 @@
           <div class="category-row">
             <div class="cat-name">${escapeHtml(c.categoryLabel)}</div>
             <div class="cat-count">${c.totalRecipes} receitas</div>
-            <input type="number" min="0" max="${c.totalRecipes}" value="0" data-cat="${escapeHtml(c.categoryLabel)}" data-max="${c.totalRecipes}">
+            <input type="number" min="0" max="20" value="0" data-cat="${escapeHtml(c.categoryLabel)}" data-max="${c.totalRecipes}">
           </div>
         `).join('');
       } catch (err) {

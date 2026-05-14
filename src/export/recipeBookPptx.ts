@@ -6,6 +6,7 @@ const pptxgen = ((PptxGenJSImport as any).default ?? PptxGenJSImport) as { new (
 type PptxInstance = InstanceType<typeof pptxgen>;
 import type { PlannedRow, RecipeRecord, WeeklyPlan } from "../core/types.js";
 import { chunkArray, resolveRuntimePath } from "../core/utils.js";
+import { getImagesDir } from "../core/database.js";
 
 // ── Slide geometry (10" × 7.5") ───────────────────────────────────────────────
 const SW = 10; const SH = 7.5;
@@ -260,8 +261,9 @@ function drawRecipeCard(slide: any, prs: any, recipe: RecipeRecord, cx: number, 
   }
 
   // Photo
-  if (recipe.imagePath && fs.existsSync(recipe.imagePath)) {
-    slide.addImage({ path: recipe.imagePath, x: photoX + 0.04, y: cy + HDR_H + 0.04, w: photoW - 0.08, h: ch - HDR_H - 0.08, sizing: { type: "contain", w: photoW - 0.08, h: ch - HDR_H - 0.08 } });
+  const fullImgPath = recipe.imagePath ? path.join(getImagesDir(), recipe.imagePath) : null;
+  if (fullImgPath && fs.existsSync(fullImgPath)) {
+    slide.addImage({ path: fullImgPath, x: photoX + 0.04, y: cy + HDR_H + 0.04, w: photoW - 0.08, h: ch - HDR_H - 0.08, sizing: { type: "contain", w: photoW - 0.08, h: ch - HDR_H - 0.08 } });
   } else {
     slide.addText("Sem imagem", { x: photoX, y: cy + HDR_H + ch / 2 - 0.1, w: photoW - 0.08, h: 0.2, align: "center", fontSize: 7.5, color: "888888", fontFace: "Helvetica" });
   }

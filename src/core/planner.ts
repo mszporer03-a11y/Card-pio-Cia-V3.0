@@ -70,8 +70,11 @@ export async function generateWeeklyPlan(options: GeneratePlanOptions): Promise<
       continue;
     }
 
-    const withImage = recipes.filter((r) => r.imagePath != null);
-    const pool = withImage.length >= requestedCount ? withImage : recipes;
+    // Always draw from the full pool (all recipes in the category, with or without image).
+    // requestedCount = how many recipe rows per day for this category.
+    // Each row spans 7 days, so total slots to sample = requestedCount * 7.
+    const pool = recipes;
+    const totalSlots = requestedCount * 7;
 
     const filteredPool = pool.filter((r) => {
       for (const name of allSelectedNames) {
@@ -83,15 +86,15 @@ export async function generateWeeklyPlan(options: GeneratePlanOptions): Promise<
 
     let sampled: RecipeRecord[];
     if (options.allowRepetition) {
-      sampled = sampleWithReplacement(effectivePool, requestedCount, Math.random);
+      sampled = sampleWithReplacement(effectivePool, totalSlots, Math.random);
     } else {
-      if (requestedCount > effectivePool.length) {
-        console.warn(`[planner] ${resolvedCategory.categoryLabel}: solicitadas ${requestedCount}, disponíveis ${effectivePool.length}. Usando todas + repetindo.`);
+      if (totalSlots > effectivePool.length) {
+        console.warn(`[planner] ${resolvedCategory.categoryLabel}: solicitados ${totalSlots} slots, disponíveis ${effectivePool.length}. Usando todas + repetindo.`);
         const allShuffled = sampleDiversified(effectivePool, effectivePool.length, (r) => r.recipeName, Math.random, SIMILARITY_THRESHOLD);
-        const extra = sampleWithReplacement(effectivePool, requestedCount - effectivePool.length, Math.random);
+        const extra = sampleWithReplacement(effectivePool, totalSlots - effectivePool.length, Math.random);
         sampled = [...allShuffled, ...extra];
       } else {
-        sampled = sampleDiversified(effectivePool, requestedCount, (r) => r.recipeName, Math.random, SIMILARITY_THRESHOLD);
+        sampled = sampleDiversified(effectivePool, totalSlots, (r) => r.recipeName, Math.random, SIMILARITY_THRESHOLD);
       }
     }
 
