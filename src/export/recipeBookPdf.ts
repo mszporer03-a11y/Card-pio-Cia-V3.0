@@ -54,12 +54,17 @@ export async function writeRecipeBookPdf(filePath: string, plan: WeeklyPlan): Pr
 
     pageNum = drawPlanTableSection(doc, plan, pageNum);
 
-    const seenIds = new Set<number>();
+    const seenNames = new Set<string>();
     const recipes = plan.rows
       .flatMap((row) => row.days)
       .filter((d): d is PlannedDay => d !== null)
       .map((d) => d.recipe)
-      .filter((r) => { if (seenIds.has(r.id)) return false; seenIds.add(r.id); return true; });
+      .filter((r) => {
+        const key = r.recipeName.trim().toUpperCase();
+        if (seenNames.has(key)) return false;
+        seenNames.add(key);
+        return true;
+      });
 
     for (const pair of chunkArray(recipes, 2)) {
       doc.addPage(); pageNum++;

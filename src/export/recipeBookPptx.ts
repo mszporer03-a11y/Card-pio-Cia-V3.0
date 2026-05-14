@@ -37,12 +37,17 @@ export async function writeRecipeBookPptx(filePath: string, plan: WeeklyPlan): P
   addCoverSlide(prs, plan.title);
   addPlanTableSlides(prs, plan);
 
-  const seenIds = new Set<number>();
+  const seenNames = new Set<string>();
   const recipes = plan.rows
     .flatMap((row) => row.days)
     .filter((d): d is NonNullable<typeof d> => d !== null)
     .map((d) => d.recipe)
-    .filter((r) => { if (seenIds.has(r.id)) return false; seenIds.add(r.id); return true; });
+    .filter((r) => {
+      const key = r.recipeName.trim().toUpperCase();
+      if (seenNames.has(key)) return false;
+      seenNames.add(key);
+      return true;
+    });
   for (const pair of chunkArray(recipes, 2)) addRecipeCardSlide(prs, pair);
 
   await prs.writeFile({ fileName: filePath });
